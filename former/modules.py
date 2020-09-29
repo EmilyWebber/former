@@ -220,7 +220,7 @@ class CustomTransformerBlock(nn.Module):
         super().__init__()
 
         self.attention = SelfAttentionWide(emb, heads=heads, mask=mask) if wide \
-                    else CustomSelfAttentionNarrow(emb, heads=heads, mask=mask, fnc = my_multihead_attention_mechanism)
+                    else CustomSelfAttentionNarrow(emb, heads=heads, mask=mask)
         self.mask = mask
 
         self.norm1 = nn.LayerNorm(emb)
