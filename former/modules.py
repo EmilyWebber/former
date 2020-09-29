@@ -144,6 +144,38 @@ class SelfAttentionNarrow(nn.Module):
 
         return self.unifyheads(out)
 
+class CustomSelfAttentionNarrow(nn.Module):
+
+    def __init__(self, emb, heads=8, mask=False, fnc = my_multihead_attention_mechanism):
+        """
+
+        :param emb:
+        :param heads:
+        :param mask:
+        """
+
+        super().__init__()
+
+        assert emb % heads == 0, f'Embedding dimension ({emb}) should be divisible by nr. of heads ({heads})'
+
+        self.emb = emb
+        self.heads = heads
+        self.mask = mask
+        self.fnc = my_multihead_attention_mechanism
+
+        s = emb // heads
+        # - We will break the embedding into `heads` chunks and feed each to a different attention head
+
+        self.tokeys    = nn.Linear(s, s, bias=False)
+        self.toqueries = nn.Linear(s, s, bias=False)
+        self.tovalues  = nn.Linear(s, s, bias=False)
+
+        self.unifyheads = nn.Linear(heads * s, emb)
+
+    def forward(self, x):
+
+        return self.fnc( x)
+    
 class TransformerBlock(nn.Module):
 
     def __init__(self, emb, heads, mask, seq_length, ff_hidden_mult=4, dropout=0.0, wide=True):
@@ -151,6 +183,42 @@ class TransformerBlock(nn.Module):
 
         self.attention = SelfAttentionWide(emb, heads=heads, mask=mask) if wide \
                     else SelfAttentionNarrow(emb, heads=heads, mask=mask)
+        self.mask = mask
+
+        self.norm1 = nn.LayerNorm(emb)
+        self.norm2 = nn.LayerNorm(emb)
+
+        self.ff = nn.Sequential(
+            nn.Linear(emb, ff_hidden_mult * emb),
+            nn.ReLU(),
+            nn.Linear(ff_hidden_mult * emb, emb)
+        )
+
+        self.do = nn.Dropout(dropout)
+
+    def forward(self, x):
+
+        attended = self.attention(x)
+
+        x = self.norm1(attended + x)
+
+        x = self.do(x)
+
+        fedforward = self.ff(x)
+
+        x = self.norm2(fedforward + x)
+
+        x = self.do(x)
+
+        return x
+    
+class CustomTransformerBlock(nn.Module):
+
+    def __init__(self, emb, heads, mask, seq_length, ff_hidden_mult=4, dropout=0.0, wide=False):
+        super().__init__()
+
+        self.attention = SelfAttentionWide(emb, heads=heads, mask=mask) if wide \
+                    else CustomSelfAttentionNarrow(emb, heads=heads, mask=mask)
         self.mask = mask
 
         self.norm1 = nn.LayerNorm(emb)
