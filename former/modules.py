@@ -5,6 +5,8 @@ import torch
 from torch import nn
 import torch.nn.functional as F
 
+from .my_transformer_model import my_multihead_attention_mechanism
+
 import random, math
 
 class SelfAttentionWide(nn.Module):
@@ -146,7 +148,7 @@ class SelfAttentionNarrow(nn.Module):
 
 class CustomSelfAttentionNarrow(nn.Module):
 
-    def __init__(self, emb, heads=8, mask=False, fnc = my_multihead_attention_mechanism):
+    def __init__(self, emb, heads=8, mask=False):
         """
 
         :param emb:
@@ -174,7 +176,7 @@ class CustomSelfAttentionNarrow(nn.Module):
 
     def forward(self, x):
 
-        return self.fnc( x)
+        return self.fnc(x)
     
 class TransformerBlock(nn.Module):
 
@@ -214,11 +216,11 @@ class TransformerBlock(nn.Module):
     
 class CustomTransformerBlock(nn.Module):
 
-    def __init__(self, emb, heads, mask, seq_length, ff_hidden_mult=4, dropout=0.0, wide=False):
+    def __init__(self, emb, heads, mask, seq_length, ff_hidden_mult=4, dropout=0.0, wide=False, fnc = my_multihead_attention_mechanism):
         super().__init__()
 
         self.attention = SelfAttentionWide(emb, heads=heads, mask=mask) if wide \
-                    else CustomSelfAttentionNarrow(emb, heads=heads, mask=mask)
+                    else CustomSelfAttentionNarrow(emb, heads=heads, mask=mask, fnc = my_multihead_attention_mechanism)
         self.mask = mask
 
         self.norm1 = nn.LayerNorm(emb)

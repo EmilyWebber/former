@@ -2,7 +2,7 @@ import torch
 from torch import nn
 import torch.nn.functional as F
 
-from .modules import TransformerBlock
+from .modules import TransformerBlock, CustomTransformerBlock
 
 from .util import d
 
@@ -11,7 +11,7 @@ class CustomTransformer(nn.Module):
     Transformer for classifying sequences
     """
 
-    def __init__(self, emb, heads, depth, seq_length, num_tokens, num_classes, max_pool=True, dropout=0.0, wide=False, my_multihead_attention_mechanism):
+    def __init__(self, emb, heads, depth, seq_length, num_tokens, num_classes, max_pool=True, dropout=0.0, wide=False):
         """
         :param emb: Embedding dimension
         :param heads: nr. of attention heads
@@ -28,13 +28,11 @@ class CustomTransformer(nn.Module):
 
         self.token_embedding = nn.Embedding(embedding_dim=emb, num_embeddings=num_tokens)
         self.pos_embedding = nn.Embedding(embedding_dim=emb, num_embeddings=seq_length)
-
-        self.my_multihead_attention_mechanism = my_multihead_attention_mechanism
         
         tblocks = []
         for i in range(depth):
             tblocks.append(
-                CustomTransformerBlock(emb=emb, heads=heads, seq_length=seq_length, mask=False, dropout=dropout, wide=wide, fnc = my_multihead_attention_mechanism))
+                CustomTransformerBlock(emb=emb, heads=heads, seq_length=seq_length, mask=False, dropout=dropout, wide=wide))
 
         self.tblocks = nn.Sequential(*tblocks)
 
